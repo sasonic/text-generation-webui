@@ -1,2 +1,5 @@
 chatterbox-tts
+openai-whisper
+sounddevice
 soundfile
+scipy

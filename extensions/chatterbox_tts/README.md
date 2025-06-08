@@ -1,29 +1,52 @@
 # Chatterbox TTS for text-generation-webui
 
-This extension integrates the high-quality, realistic [Chatterbox TTS model](https://github.com/resemble-ai/chatterbox) by Resemble AI directly into the text-generation-webui. It automatically converts the AI's generated text responses into speech and plays them in your browser.
+This extension integrates the high-quality, realistic [Chatterbox TTS model](https://github.com/resemble-ai/chatterbox) by Resemble AI directly into the text-generation-webui.
+
+It offers two modes of operation:
+1.  **Standard TTS**: Automatically converts the AI's generated text responses into speech.
+2.  **Conversational Mode**: Enables a hands-free, voice-to-voice conversation with the AI using your microphone.
 
 ## Features
 
 *   **Automatic Playback**: AI responses are automatically spoken as they are generated.
+*   **Conversational Mode**: Engage in a hands-free conversation. Your spoken words are transcribed by Whisper, sent to the AI, and the AI's response is spoken back to you.
 *   **High-Quality Voice**: Utilizes the powerful Chatterbox model for natural and expressive speech.
 *   **Custom Voice Cloning**: Use your own `.wav` or `.mp3` files to clone a voice for TTS generation.
-*   **Fine-Grained Control**: Adjust parameters like Temperature, Exaggeration, CFG Weight, and Playback Speed to customize the voice output.
+*   **Per-Character Settings**: Automatically save and load voice settings for each character you chat with.
+*   **Fine-Grained Control**: Adjust Temperature, Exaggeration, CFG Weight, and Playback Speed to customize the voice output.
 *   **GPU Acceleration**: Automatically uses your CUDA-enabled GPU for fast inference if available.
 *   **Persistent Settings**: Your chosen settings are saved and loaded automatically.
 
 ## Installation
 
-Follow these steps to install the extension. The most common point of failure is a mismatch between PyTorch and CUDA versions, so a detailed troubleshooting guide is included below.
+Follow these steps to install the extension. The new Conversational Mode requires additional dependencies, including `ffmpeg` and OpenAI's `whisper`.
 
-### Step 1: Add the Extension
+### Step 1: Install `ffmpeg` (Required for Conversational Mode)
 
-Place the `chatterbox_tts` folder into the `extensions` directory of your text-generation-webui installation.
+The `whisper` model, used for speech-to-text, requires `ffmpeg` to be installed on your system.
 
-### Step 2: Install Dependencies (The Standard Way)
+*   **Windows**:
+    1.  Download a release from [ffmpeg.org](https://ffmpeg.org/download.html).
+    2.  Extract the archive.
+    3.  Add the `bin` directory from the extracted folder to your system's PATH.
+    4.  You can verify the installation by opening a new terminal and running `ffmpeg -version`.
 
-1.  Open a command line/terminal and navigate to your text-generation-webui root folder.
-2.  Activate the correct Python environment. For portable/one-click installs on Windows, you'll use the included Python executable.
-3.  Run the following command to install the required libraries:
+*   **macOS**:
+    ```bash
+    brew install ffmpeg
+    ```
+
+*   **Linux (Debian/Ubuntu)**:
+    ```bash
+    sudo apt update && sudo apt install ffmpeg
+    ```
+
+### Step 2: Install Python Dependencies
+
+1.  Place the `chatterbox_tts` folder into the `extensions` directory of your text-generation-webui installation.
+2.  Open a command line/terminal and navigate to your text-generation-webui root folder.
+3.  Activate your Python environment (e.g., `conda activate` or the `cmd_...bat` script for one-click installs).
+4.  Run the following command to install all required libraries from the included `requirements.txt`:
 
     **For Windows (Portable/One-Click):**
     ```bash
@@ -36,11 +59,13 @@ Place the `chatterbox_tts` folder into the `extensions` directory of your text-g
     pip install -r extensions/chatterbox_tts/requirements.txt
     ```
 
-4.  Start the web UI. If everything works, you are done! If you encounter errors, especially CUDA-related ones, proceed to the troubleshooting section.
+    > **Note:** The `requirements.txt` should include `chatterbox-tts`, `openai-whisper`, `sounddevice`, `soundfile`, and `scipy`.
+
+5.  Start the web UI. If you encounter errors, especially CUDA-related ones, proceed to the troubleshooting section.
 
 ## Installation Troubleshooting: PyTorch & CUDA Mismatch
 
-**This is the most common issue.** The `chatterbox` library requires a specific version of PyTorch. The `requirements.txt` file might install a version of PyTorch that does not match the CUDA version your system (and the web UI) is configured to use. This can lead to errors or the model falling back to the much slower CPU.
+**This is the most common issue.** The `chatterbox` and `whisper` libraries require a version of PyTorch that matches the CUDA version your system (and the web UI) is configured to use. This is crucial for both TTS and speech-to-text to work on the GPU.
 
 ### How to Fix It
 
@@ -59,50 +84,60 @@ The solution is to manually uninstall the incorrect PyTorch version and reinstal
     ```bash
     .\portable_env\python.exe -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
     ```
-    If you are using **CUDA 11.8**, you would change `cu121` to `cu118`:
-    ```bash
-    .\portable_env\python.exe -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-    ```
-    **Adjust the command to match your environment.**
+    If you are using **CUDA 11.8**, you would change `cu121` to `cu118`. **Adjust the command to match your environment.**
 
 ### Diagnostic Scripts
 
 This extension includes two diagnostic scripts to help you verify your environment. Run them from your web UI's root folder:
 
-*   **Check CUDA and Torch:**
-    This script tells you if PyTorch can see your GPU.
-    ```bash
-    .\portable_env\python.exe .\extensions\chatterbox_tts\diagCuda.py
-    ```
-
-*   **Check Chatterbox Installation:**
-    This script attempts to load the Chatterbox model.
-    ```bash
-    .\portable_env\python.exe .\extensions\chatterbox_tts\diagChatter.py
-    ```
-
-Share the output of these scripts if you need to ask for help resolving issues.
+*   **Check CUDA and Torch:** `.\portable_env\python.exe .\extensions\chatterbox_tts\diagCuda.py`
+*   **Check Chatterbox Installation:** `.\portable_env\python.exe .\extensions\chatterbox_tts\diagChatter.py`
 
 ## How to Use
+
+### Standard TTS Mode
+
+This mode simply speaks the AI's responses aloud.
 
 1.  Start or restart the text-generation-webui.
 2.  Navigate to the **Session** tab.
 3.  You will find a new accordion section named **Chatterbox TTS**.
-4.  Check the **Activate Chatterbox TTS** box to enable speech generation.
+4.  Check the **Activate Chatterbox TTS** box.
 5.  All subsequent AI messages will be converted to audio and played automatically.
+
+### Conversational Mode
+
+This mode allows for a full voice-to-voice conversation.
+
+1.  **First-time Setup**: In the **Chatterbox TTS** section, check the box labeled **Enable Conversational Mode**.
+2.  **IMPORTANT**: You **must restart** the text-generation-webui after checking this box. This allows the extension to load the Whisper speech-to-text model on startup.
+3.  Once reloaded, click the **Start Conversation** button.
+4.  The **Status** display will change to "Listening...".
+5.  Speak your prompt into your microphone. The extension will automatically detect when you've finished speaking.
+6.  The status will update as it transcribes your speech, sends it to the AI, and generates the audio response.
+7.  The AI's response will be played back through your speakers. The loop then repeats, returning to the "Listening..." state.
+8.  Click the **Stop Conversation** button at any time to end the session.
 
 ## Parameters Explained
 
 ### Main Settings
-*   **Activate Chatterbox TTS**: The main switch to turn the extension on or off.
-*   **Custom Voice**: Select a voice to use for generation. `Default Voice` uses the standard Chatterbox voice. Other options are populated from your `voices` folder.
-*   **Refresh Voices**: Click this button to rescan the `voices` folder for new audio files.
+*   **Activate Chatterbox TTS**: The main switch to turn the extension on or off for standard TTS playback.
 
-### Advanced Voice Settings
-*   **Temperature** (Default: 0.7): Controls the randomness and expressiveness of the speech. Higher values lead to more varied and potentially more emotional speech, while lower values are more consistent and monotonic.
-*   **Playback Speed** (Default: 1.0): Adjusts the playback speed of the final audio clip. `1.0` is normal speed, `<1.0` is slower, and `>1.0` is faster. This does not affect the voice generation itself, only the playback.
-*   **Exaggeration** (Default: 0.5): Influences the expressiveness and can also affect the pace of the speech. Higher values can make the voice more dynamic.
-*   **CFG Weight** (Default: 0.5): Classifier-Free Guidance weight. Lowering this value can sometimes improve the pacing and naturalness for voices that tend to speak very quickly.
+### Conversational Mode
+*   **Enable Conversational Mode**: A one-time setup toggle. Must be checked (and the UI restarted) to enable the hands-free conversational feature. This pre-loads the necessary models.
+*   **Status**: A non-interactive display showing the current state of the conversation manager (e.g., Idle, Listening..., Generating...).
+*   **Start/Stop Conversation**: Buttons to begin and end the hands-free conversational loop.
+
+### Voice Settings
+*(These settings are automatically saved and loaded for the currently selected character.)*
+
+*   **Voice**: Select a voice for generation. `Default Voice` uses the standard Chatterbox voice. Other options are populated from your `voices` folder.
+*   **Refresh Voices**: Rescans the `voices` folder for new audio files.
+*   **Temperature** (Default: 0.7): Controls the randomness of the speech. Higher values lead to more varied and emotional speech.
+*   **Playback Speed** (Default: 1.0): Adjusts the playback speed of the final audio clip. `<1.0` is slower, `>1.0` is faster.
+*   **Exaggeration** (Default: 0.5): Influences the expressiveness and pace of the speech.
+*   **CFG Weight** (Default: 0.5): Classifier-Free Guidance weight. Lowering this can sometimes improve pacing for voices that speak too quickly.
+*   **Save Settings for Character**: Manually save the current voice settings for the active character.
 
 ## Using Custom Voices
 
@@ -111,4 +146,4 @@ You can clone any voice by providing a short audio sample.
 1.  Get a clean audio recording of the target voice. The best samples are high-quality `.wav` or `.mp3` files with a single speaker and minimal background noise.
 2.  Place your audio file(s) into the `text-generation-webui/extensions/chatterbox_tts/voices/` directory.
 3.  In the web UI, click the **Refresh Voices** button.
-4.  Your audio file will now be available as an option in the **Custom Voice** dropdown menu. Select it to generate speech in that voice.
+4.  Your audio file will now be available in the **Voice** dropdown. Select it to generate speech in that voice. When you save, it will be linked to the current character.
