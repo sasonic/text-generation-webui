@@ -1,0 +1,8 @@
+{
+    "activate": true,
+    "selected_voice": "Chris Hemsworth.wav",
+    "temperature": 0.65,
+    "exaggeration": 0.85,
+    "cfg_weight": 0.35,
+    "playback_rate": 0.9
+}
